@@ -180,7 +180,7 @@ function generateSuccess(
   };
 }
 
-function abortPromises(abortController: AbortController) {
+function abortPromises(abortController: Nullable<AbortController>) {
   if (abortController) {
     abortController.abort();
   }
@@ -190,7 +190,8 @@ export async function fetchSslCert(
   hostname: string,
   providedOptions: Partial<FetchSslCertOptions> = {}
 ): Promise<SslCertResponse> {
-  const abortController = (AbortController && new AbortController()) || null;
+  const abortController =
+    (typeof AbortController !== "undefined" && new AbortController()) || null;
   const startTime = Date.now();
   let errorType = SslErrors.UNKNOWN_ERROR;
   let originalError;
