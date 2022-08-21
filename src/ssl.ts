@@ -1,19 +1,19 @@
-import * as https from 'https'
-import { RequestOptions } from 'https'
+import * as https from "https";
+import { RequestOptions } from "https";
 import {
   ExtendedError,
   ExtendedIncomingMessage,
   FetchSslCertOptions,
   SslCertResponse,
   SslErrors,
-} from './typings'
-import { DetailedPeerCertificate, PeerCertificate } from 'tls'
+} from "./typings";
+import { DetailedPeerCertificate, PeerCertificate } from "tls";
 
 // Defaults
-const PORT = 443
-const PROTOCOL = 'https:'
-const TIMEOUT = 5000
-const DETAILED = false
+const PORT = 443;
+const PROTOCOL = "https:";
+const TIMEOUT = 5000;
+const DETAILED = false;
 
 const ErrorDetectionRules = [
   {
@@ -36,78 +36,87 @@ const ErrorDetectionRules = [
     pattern: /ECONNREFUSED/i,
     type: SslErrors.CONNECTION_REFUSED_ERROR,
   },
-]
+];
 
-const promisifiedHttpsGet = (requestOptions: RequestOptions,
-  abortController: AbortController): Promise<ExtendedIncomingMessage> => new Promise(
-  (resolve, reject) => {
-    const timeout = requestOptions.timeout || TIMEOUT
+const promisifiedHttpsGet = (
+  requestOptions: RequestOptions,
+  abortController: AbortController
+): Promise<ExtendedIncomingMessage> =>
+  new Promise((resolve, reject) => {
+    const timeout = requestOptions.timeout || TIMEOUT;
     try {
-      const request = https.get(requestOptions, res => {
+      const request = https.get(requestOptions, (res) => {
         // Need to provide extended interface to support getPeerCertificate (not properly typed)
-        resolve(res as ExtendedIncomingMessage)
-      })
+        resolve(res as ExtendedIncomingMessage);
+      });
 
       request.setTimeout(timeout, () => {
-        request.destroy()
-        reject('TIMEOUT')
-      })
+        request.destroy();
+        reject("TIMEOUT");
+      });
 
       // use its "timeout" event to abort the request
-      request.on('timeout', () => {
-        request.destroy()
-        reject('TIMEOUT')
-      })
+      request.on("timeout", () => {
+        request.destroy();
+        reject("TIMEOUT");
+      });
 
       // use its "error" event to abort the request
-      request.on('error', e => {
-        request.destroy()
-        reject(e)
-      })
+      request.on("error", (e) => {
+        request.destroy();
+        reject(e);
+      });
 
-      request.end()
+      request.end();
     } catch (e) {
-      reject(e)
+      reject(e);
     }
 
-    abortController.signal.addEventListener('abort', () => {
-      reject('ABORT')
-    })
+    abortController.signal.addEventListener("abort", () => {
+      reject("ABORT");
+    });
+  });
 
-  })
-
-const promisifiedTimeout = (timeout: number,
-  abortController: AbortController): Promise<SslErrors.TIMEOUT_ERROR> => new Promise(
-  (resolve, reject) => {
+const promisifiedTimeout = (
+  timeout: number,
+  abortController: AbortController
+): Promise<SslErrors.TIMEOUT_ERROR> =>
+  new Promise((resolve, reject) => {
     const __timeout = setTimeout(() => {
-      resolve(SslErrors.TIMEOUT_ERROR)
-    }, timeout)
+      resolve(SslErrors.TIMEOUT_ERROR);
+    }, timeout);
 
-    abortController.signal.addEventListener('abort', () => {
-      clearTimeout(__timeout)
-      reject('ABORT')
-    })
-  })
+    abortController.signal.addEventListener("abort", () => {
+      clearTimeout(__timeout);
+      reject("ABORT");
+    });
+  });
 
-function buildOptions (providedOptions: Partial<FetchSslCertOptions>): FetchSslCertOptions {
-  const { timeout, detailed, port, protocol } = providedOptions
+function buildOptions(
+  providedOptions: Partial<FetchSslCertOptions>
+): FetchSslCertOptions {
+  const { timeout, detailed, port, protocol } = providedOptions;
 
   if (timeout === undefined || timeout === null || timeout < 0) {
-    providedOptions.timeout = timeout || TIMEOUT
+    providedOptions.timeout = timeout || TIMEOUT;
   }
 
   if (detailed === undefined || detailed === null) {
-    providedOptions.detailed = detailed || DETAILED
+    providedOptions.detailed = detailed || DETAILED;
   }
 
-  providedOptions.protocol = protocol || PROTOCOL
-  providedOptions.port = port || PORT
+  providedOptions.protocol = protocol || PROTOCOL;
+  providedOptions.port = port || PORT;
 
-  return providedOptions as FetchSslCertOptions
+  return providedOptions as FetchSslCertOptions;
 }
 
-function generateExecutionOptions (hostname: string, port: number,
-  protocol: string, timeout: number): RequestOptions {
+function generateExecutionOptions(
+  hostname: string,
+  port: number,
+  protocol: string,
+  timeout: number
+): RequestOptions {
   return {
     hostname,
     port,
@@ -115,28 +124,31 @@ function generateExecutionOptions (hostname: string, port: number,
     timeout,
     agent: false,
     rejectUnauthorized: false,
-    ciphers: 'ALL',
-  }
+    ciphers: "ALL",
+  };
 }
 
-function assessError (e: ExtendedError): SslErrors {
-  const { message, code } = e
+function assessError(e: ExtendedError): SslErrors {
+  const { message, code } = e;
   for (const errorDetectionRule of ErrorDetectionRules) {
-    const { pattern, type } = errorDetectionRule
+    const { pattern, type } = errorDetectionRule;
     if (code && code.match(pattern)) {
-      return type
+      return type;
     }
     if (message.match(pattern)) {
-      return type
+      return type;
     }
   }
-  return SslErrors.UNKNOWN_ERROR
+  return SslErrors.UNKNOWN_ERROR;
 }
 
-function generateError (sslError: SslErrors, executionStart: number,
+function generateError(
+  sslError: SslErrors,
+  executionStart: number,
   executionOptions: FetchSslCertOptions,
-  rawError?: ExtendedError): SslCertResponse {
-  const executionTime = Date.now() - executionStart
+  rawError?: ExtendedError
+): SslCertResponse {
+  const executionTime = Date.now() - executionStart;
   return {
     success: false,
     error: sslError,
@@ -144,14 +156,15 @@ function generateError (sslError: SslErrors, executionStart: number,
     executionTime,
     executionOptions,
     certificate: null,
-  }
+  };
 }
 
-function generateSuccess (certificate: PeerCertificate | DetailedPeerCertificate,
+function generateSuccess(
+  certificate: PeerCertificate | DetailedPeerCertificate,
   executionStart: number,
-  executionOptions: FetchSslCertOptions,
+  executionOptions: FetchSslCertOptions
 ): SslCertResponse {
-  const executionTime = Date.now() - executionStart
+  const executionTime = Date.now() - executionStart;
   return {
     success: true,
     error: null,
@@ -159,53 +172,59 @@ function generateSuccess (certificate: PeerCertificate | DetailedPeerCertificate
     executionTime,
     executionOptions,
     certificate,
-  }
+  };
 }
 
-export async function fetchSslCert (hostname: string,
-  providedOptions: Partial<FetchSslCertOptions> = {}): Promise<SslCertResponse> {
-  const abortController = new AbortController()
-  const startTime = Date.now()
-  let errorType = SslErrors.UNKNOWN_ERROR
-  let originalError
+export async function fetchSslCert(
+  hostname: string,
+  providedOptions: Partial<FetchSslCertOptions> = {}
+): Promise<SslCertResponse> {
+  const abortController = new AbortController();
+  const startTime = Date.now();
+  let errorType = SslErrors.UNKNOWN_ERROR;
+  let originalError;
 
   if (!hostname || !hostname.length) {
-    throw Error(`Illegal hostname ${hostname} provided`)
+    throw Error(`Illegal hostname ${hostname} provided`);
   }
 
-  const options = buildOptions(providedOptions)
-  const { port, protocol, timeout, detailed } = options
+  const options = buildOptions(providedOptions);
+  const { port, protocol, timeout, detailed } = options;
 
   try {
-    const sslOptions = generateExecutionOptions(hostname, port, protocol,
-      timeout)
+    const sslOptions = generateExecutionOptions(
+      hostname,
+      port,
+      protocol,
+      timeout
+    );
 
     // Ensure timeout on connection
-    const sslResult = await Promise.race(
-      [
-        promisifiedHttpsGet(sslOptions, abortController),
-        promisifiedTimeout(timeout, abortController)])
+    const sslResult = await Promise.race([
+      promisifiedHttpsGet(sslOptions, abortController),
+      promisifiedTimeout(timeout, abortController),
+    ]);
 
     // Check if timeout triggered
     if (sslResult === SslErrors.TIMEOUT_ERROR) {
-      abortController.abort()
-      return generateError(SslErrors.TIMEOUT_ERROR, startTime, options)
+      abortController.abort();
+      return generateError(SslErrors.TIMEOUT_ERROR, startTime, options);
     }
 
     if (sslResult && sslResult.socket) {
-      const certificate = sslResult.socket.getPeerCertificate(detailed)
+      const certificate = sslResult.socket.getPeerCertificate(detailed);
       if (certificate) {
-        abortController.abort()
-        return generateSuccess(certificate, startTime, options)
+        abortController.abort();
+        return generateSuccess(certificate, startTime, options);
       }
     } else {
-      errorType = SslErrors.SOCKET_ERROR
+      errorType = SslErrors.SOCKET_ERROR;
     }
   } catch (e: unknown) {
-    errorType = assessError(e as ExtendedError)
-    originalError = e as ExtendedError
+    errorType = assessError(e as ExtendedError);
+    originalError = e as ExtendedError;
   }
 
-  abortController.abort()
-  return generateError(errorType, startTime, options, originalError)
+  abortController.abort();
+  return generateError(errorType, startTime, options, originalError);
 }
