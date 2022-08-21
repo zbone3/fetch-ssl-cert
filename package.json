@@ -1,6 +1,6 @@
 {
   "name": "fetch-ssl-cert",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A simple SSL certificate fetcher",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
