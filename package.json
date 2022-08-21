@@ -5,6 +5,7 @@
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "scripts": {
+    "postinstall": "npm run build",
     "build": "tsc --build",
     "watch": "tsc --watch",
     "test": "jest",
