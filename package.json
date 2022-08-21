@@ -9,15 +9,15 @@
     "build": "tsc --build",
     "watch": "tsc --watch",
     "test": "jest",
-    "prepare": "husky install"
+    "prepare": "node ./prepare.js"
   },
   "author": "Ziv Eli",
   "license": "MIT",
   "dependencies": {
+    "@types/jest": "^28.1.7",
     "typescript": "^4.7.4"
   },
   "devDependencies": {
-    "@types/jest": "^28.1.7",
     "@types/node": "^16.11.49",
     "husky": "^8.0.1",
     "jest": "^28.1.3",
