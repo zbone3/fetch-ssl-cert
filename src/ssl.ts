@@ -4,6 +4,7 @@ import {
   ExtendedError,
   ExtendedIncomingMessage,
   FetchSslCertOptions,
+  Nullable,
   SslCertResponse,
   SslErrors,
 } from "./typings";
@@ -40,7 +41,7 @@ const ErrorDetectionRules = [
 
 const promisifiedHttpsGet = (
   requestOptions: RequestOptions,
-  abortController: AbortController
+  abortController: Nullable<AbortController>
 ): Promise<ExtendedIncomingMessage> =>
   new Promise((resolve, reject) => {
     const timeout = requestOptions.timeout || TIMEOUT;
@@ -72,24 +73,28 @@ const promisifiedHttpsGet = (
       reject(e);
     }
 
-    abortController.signal.addEventListener("abort", () => {
-      reject("ABORT");
-    });
+    if (abortController) {
+      abortController.signal.addEventListener("abort", () => {
+        reject("ABORT");
+      });
+    }
   });
 
 const promisifiedTimeout = (
   timeout: number,
-  abortController: AbortController
+  abortController: Nullable<AbortController>
 ): Promise<SslErrors.TIMEOUT_ERROR> =>
   new Promise((resolve, reject) => {
     const __timeout = setTimeout(() => {
       resolve(SslErrors.TIMEOUT_ERROR);
     }, timeout);
 
-    abortController.signal.addEventListener("abort", () => {
-      clearTimeout(__timeout);
-      reject("ABORT");
-    });
+    if (abortController) {
+      abortController.signal.addEventListener("abort", () => {
+        clearTimeout(__timeout);
+        reject("ABORT");
+      });
+    }
   });
 
 function buildOptions(
@@ -175,11 +180,17 @@ function generateSuccess(
   };
 }
 
+function abortPromises(abortController: AbortController) {
+  if (abortController) {
+    abortController.abort();
+  }
+}
+
 export async function fetchSslCert(
   hostname: string,
   providedOptions: Partial<FetchSslCertOptions> = {}
 ): Promise<SslCertResponse> {
-  const abortController = new AbortController();
+  const abortController = (AbortController && new AbortController()) || null;
   const startTime = Date.now();
   let errorType = SslErrors.UNKNOWN_ERROR;
   let originalError;
@@ -207,14 +218,14 @@ export async function fetchSslCert(
 
     // Check if timeout triggered
     if (sslResult === SslErrors.TIMEOUT_ERROR) {
-      abortController.abort();
+      abortPromises(abortController);
       return generateError(SslErrors.TIMEOUT_ERROR, startTime, options);
     }
 
     if (sslResult && sslResult.socket) {
       const certificate = sslResult.socket.getPeerCertificate(detailed);
       if (certificate) {
-        abortController.abort();
+        abortPromises(abortController);
         return generateSuccess(certificate, startTime, options);
       }
     } else {
@@ -225,6 +236,6 @@ export async function fetchSslCert(
     originalError = e as ExtendedError;
   }
 
-  abortController.abort();
+  abortPromises(abortController);
   return generateError(errorType, startTime, options, originalError);
 }
