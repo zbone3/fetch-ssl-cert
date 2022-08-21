@@ -2,9 +2,37 @@
 
 A simple Typescript SSL certificate fetcher with promise support.
 
+## Usage
+
+Install from npm
+
+```
+npm install fetch-ssl-cert
+```
+
+Example usage
+
+``` javascript
+import { fetchSslCert } from 'fetch-ssl-cert'
+
+async function fetchSslCertSubject (hostname) {
+  const res = await fetchSslCert(hostname)
+  const { success, certificate, error } = res
+  if (success) {
+    console.log(certificate.subject)
+  } else {
+    throw new Error(`SSL Fetch error: ${error}`)
+  }
+}
+
+fetchSslCertSubject('google.com')
+// { CN: '*.google.com' }
+```
+
 ## Response
 
-This package returns a standard response `SslCertResponse` to provide a normazlied interface for success and failures (which can frequently occur across different servers, configurations and hostnames) due to several reasons.
+This package returns a standard response `SslCertResponse` to provide a normazlied interface for success and failures (
+which can frequently occur across different servers, configurations and hostnames) due to several reasons.
 
 ### Successful response
 
@@ -101,11 +129,13 @@ An error response can look something like this (e.g. ENOTFOUND):
 
 ## Error support
 
-Looking up SSL certificates can naturally generate several errors. This can be due to timeouts, incorrect configuration on the target server, non-existing hostname etc..
+Looking up SSL certificates can naturally generate several errors. This can be due to timeouts, incorrect configuration
+on the target server, non-existing hostname etc.
 As such this project already detects the most common errors and returns a standard response.
 
+
 | **Error code**             | **Description**                                                                                                                                                                          |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `SSL_PROTOCOL_ERROR`       | Corresponding to EPROTO errors. Can occur for several reasons including: (1) There is an error with the certificate (e.g. expired or invalid) (2) SSL configuration issue on the server. |
 | `TIMEOUT_ERROR`            | The request to fetch the SSL certificate timed out (either on the socket level or on the entire e2e flow).                                                                               |
 | `SOCKET_ERROR`             | The socket connection has failed (this was not previously observed).                                                                                                                     |
