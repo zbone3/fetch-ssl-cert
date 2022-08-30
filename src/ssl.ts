@@ -140,7 +140,7 @@ function assessError(e: ExtendedError): SslErrors {
     if (code && code.match(pattern)) {
       return type;
     }
-    if (message.match(pattern)) {
+    if (message && message.match(pattern)) {
       return type;
     }
   }
